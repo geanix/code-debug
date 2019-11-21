@@ -436,6 +436,20 @@
 							]
 						},
 						"valuesFormatting": "parseText"
+					},
+					{
+						"label": "GDB: Debug on remote device",
+						"description": "Transfer program to and debug it on a remote device",
+						"body": {
+							"type": "gdb",
+							"request": "launch",
+							"name": "${3:Debug remote device}",
+							"target": "${2:192.168.0.1:2345}",
+							"remote": true,
+							"executable": "${1:./bin/executable}",
+							"cwd": "^\"\\${workspaceRoot}\""
+						},
+						"valuesFormatting": "parseText"
 					}
 				]
 			},

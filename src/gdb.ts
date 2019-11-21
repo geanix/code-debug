@@ -12,6 +12,8 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
 	debugger_args: string[];
 	arguments: string;
 	terminal: string;
+	executable: string;
+	remote: boolean;
 	autorun: string[];
 	ssh: SSHArguments;
 	valuesFormatting: ValuesFormattingMode;
@@ -93,7 +95,7 @@ class GDBDebugSession extends MI2DebugSession {
 				this.sendErrorResponse(response, 102, `Failed to SSH: ${err.toString()}`);
 			});
 		} else {
-			this.miDebugger.load(args.cwd, args.target, args.arguments, args.terminal).then(() => {
+			this.miDebugger.load(args.cwd, args.target, args.arguments, args.terminal, args.executable, args.remote).then(() => {
 				if (args.autorun)
 					args.autorun.forEach(command => {
 						this.miDebugger.sendUserInput(command);

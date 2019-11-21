@@ -50,18 +50,33 @@ export class MI2 extends EventEmitter implements IBackend {
 		}
 	}
 
-	load(cwd: string, target: string, procArgs: string, separateConsole: string): Thenable<any> {
-		if (!nativePath.isAbsolute(target))
+	load(cwd: string, target: string, procArgs: string, separateConsole: string, executable?: string, remote?: boolean): Thenable<any> {
+		if (!remote && !nativePath.isAbsolute(target))
 			target = nativePath.join(cwd, target);
+		if (remote && !nativePath.isAbsolute(executable))
+			executable = nativePath.join(cwd, executable);
 		return new Promise((resolve, reject) => {
 			this.isSSH = false;
 			const args = this.preargs.concat(this.extraargs || []);
+			if (executable !== undefined)
+				args.push(executable);
 			this.process = ChildProcess.spawn(this.application, args, { cwd: cwd, env: this.procEnv });
 			this.process.stdout.on("data", this.stdout.bind(this));
 			this.process.stderr.on("data", this.stderr.bind(this));
 			this.process.on("exit", (() => { this.emit("quit"); }).bind(this));
 			this.process.on("error", ((err) => { this.emit("launcherror", err); }).bind(this));
-			const promises = this.initCommands(target, cwd);
+			let promises;
+			if (remote) {
+				let remoteExecutable = nativePath.basename(executable);
+				promises = [
+					this.sendCommand(`set target-async on`, true),
+					this.sendCommand(`environment-directory "${escape(cwd)}"`, true),
+					this.sendCommand(`target-select extended-remote ${target}`),
+					this.sendCommand(`target-file-put "${escape(executable)}" ${remoteExecutable}`),
+					this.sendCommand(`gdb-set remote exec-file ./${remoteExecutable}`),
+				];
+			} else
+				promises = this.initCommands(target, cwd);
 			if (procArgs && procArgs.length)
 				promises.push(this.sendCommand("exec-arguments " + procArgs));
 			if (process.platform == "win32") {
